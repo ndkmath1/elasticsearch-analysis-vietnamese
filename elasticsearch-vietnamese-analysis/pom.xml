@@ -3,7 +3,8 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.elasticsearch</groupId>
     <artifactId>elasticsearch-analysis-vietnamese</artifactId>
-    <version>5.6.5</version>
+    <version>6.2.3</version>
+    <!--<version>5.6.5</version>-->
     <packaging>jar</packaging>
     <name>elasticsearch-analysis-vietnamese</name>
     <url>https://github.com/duydo/elasticsearch-analysis-vietnamese/</url>
@@ -31,8 +32,10 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.java.version>1.8</project.build.java.version>
-        <elasticsearch.version>5.6.5</elasticsearch.version>
-        <lucene.version>6.6.1</lucene.version>
+        <elasticsearch.version>6.2.3</elasticsearch.version>
+        <lucene.version>7.2.1</lucene.version>
+        <!--<elasticsearch.version>5.6.5</elasticsearch.version>-->
+        <!--<lucene.version>6.6.1</lucene.version>-->
         <jna.version>4.1.0</jna.version>
         <log4j.version>2.7</log4j.version>
     </properties>
@@ -49,14 +52,9 @@
             <version>2.1</version>
         </dependency>
         <dependency>
-            <groupId>vn.hus</groupId>
-            <artifactId>nlp-sd</artifactId>
-            <version>2.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>vn.hus</groupId>
-            <artifactId>nlp-tokenizer</artifactId>
-            <version>4.1.1</version>
+            <groupId>ai.vitk</groupId>
+            <artifactId>vitk-tok</artifactId>
+            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>org.elasticsearch.test</groupId>

@@ -14,23 +14,15 @@
 
 package org.apache.lucene.analysis.vi;
 
+import ai.vitk.type.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import vn.hus.nlp.sd.IConstants;
-import vn.hus.nlp.sd.SentenceDetector;
-import vn.hus.nlp.sd.SentenceDetectorFactory;
-import vn.hus.nlp.tokenizer.TokenizerProvider;
-import vn.hus.nlp.tokenizer.tokens.TaggedWord;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -42,7 +34,8 @@ import java.util.List;
  */
 public class VietnameseTokenizer extends Tokenizer {
 
-    private Iterator<TaggedWord> taggedWords;
+    private List<Token> tokens;
+    Iterator<Token> tokenIterator;
 
     private int offset = 0;
     private int skippedPositions;
@@ -52,60 +45,24 @@ public class VietnameseTokenizer extends Tokenizer {
     private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
     private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-
-    private vn.hus.nlp.tokenizer.Tokenizer tokenizer;
-    private SentenceDetector sentenceDetector;
-
-    private boolean sentenceDetectorEnabled;
-    private boolean ambiguitiesResolved;
+    private ai.vitk.tok.Tokenizer tokenizer;
 
     public VietnameseTokenizer() {
-        this(true, false);
-    }
-
-    public VietnameseTokenizer(boolean sentenceDetectorEnabled, boolean ambiguitiesResolved) {
         super();
-        this.sentenceDetectorEnabled = sentenceDetectorEnabled;
-        this.ambiguitiesResolved = ambiguitiesResolved;
-
-        if (this.sentenceDetectorEnabled) {
-            sentenceDetector = SentenceDetectorFactory.create(IConstants.LANG_VIETNAMESE);
-        }
-        tokenizer = AccessController.doPrivileged(new PrivilegedAction<vn.hus.nlp.tokenizer.Tokenizer>() {
-            @Override
-            public vn.hus.nlp.tokenizer.Tokenizer run() {
-                vn.hus.nlp.tokenizer.Tokenizer vnTokenizer = TokenizerProvider.getInstance().getTokenizer();
-                vnTokenizer.setAmbiguitiesResolved(ambiguitiesResolved);
-                return vnTokenizer;
-            }
-        });
-    }
-
-    private void tokenize(Reader input) throws IOException {
-        if (isSentenceDetectorEnabled()) {
-            final List<TaggedWord> words = new ArrayList<TaggedWord>();
-            final String[] sentences = sentenceDetector.detectSentences(input);
-            for (String s : sentences) {
-                tokenizer.tokenize(new StringReader(s));
-                words.addAll(tokenizer.getResult());
-            }
-            taggedWords = words.iterator();
-        } else {
-            tokenizer.tokenize(input);
-            taggedWords = tokenizer.getResult().iterator();
-        }
+        tokenizer = TokenizerUtils.getTokenizer();
     }
 
     @Override
     public final boolean incrementToken() throws IOException {
         clearAttributes();
-        while (taggedWords.hasNext()) {
-            final TaggedWord word = taggedWords.next();
+        while (tokenIterator.hasNext()) {
+            Token t = tokenIterator.next();
+            String word = t.getWord();
             if (accept(word)) {
                 posIncrAtt.setPositionIncrement(skippedPositions + 1);
-                typeAtt.setType(word.getRule().getName());
-                final int length = word.getText().length();
-                termAtt.copyBuffer(word.getText().toCharArray(), 0, length);
+                typeAtt.setType(TypeAttribute.DEFAULT_TYPE);
+                final int length = word.length();
+                termAtt.copyBuffer(word.toCharArray(), 0, length);
                 offsetAtt.setOffset(correctOffset(offset), offset = correctOffset(offset + length));
                 offset++;
                 return true;
@@ -118,8 +75,7 @@ public class VietnameseTokenizer extends Tokenizer {
     /**
      * Only accept the word characters.
      */
-    private final boolean accept(TaggedWord word) {
-        final String token = word.getText();
+    private final boolean accept(String token) {
         if (token.length() == 1) {
             return Character.isLetterOrDigit(token.charAt(0));
         }
@@ -142,11 +98,26 @@ public class VietnameseTokenizer extends Tokenizer {
         tokenize(input);
     }
 
-    public boolean isSentenceDetectorEnabled() {
-        return sentenceDetectorEnabled;
+    private void tokenize(Reader input) {
+        int numChars;
+        char[] buffer = new char[1024];
+        StringBuilder stringBuilder = new StringBuilder();
+        try {
+            while ((numChars =
+                    input.read(buffer, 0, buffer.length)) != -1) {
+                stringBuilder.append(buffer, 0, numChars);
+            }
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        String stringToTokenize = stringBuilder.toString().toLowerCase();
+        this.tokens = tokenizer.tokenize(stringToTokenize);
+        this.tokenIterator = tokens.iterator();
     }
 
-    public boolean isAmbiguitiesResolved() {
-        return ambiguitiesResolved;
+    public ai.vitk.tok.Tokenizer get() {
+        return tokenizer;
     }
+
 }

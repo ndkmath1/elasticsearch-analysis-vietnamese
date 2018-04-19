@@ -36,6 +36,6 @@ public class VietnameseTokenizerFactory extends AbstractTokenizerFactory {
 
     @Override
     public Tokenizer create() {
-        return new VietnameseTokenizer(sentenceDetectorEnabled, ambiguitiesResolved);
+        return new VietnameseTokenizer();
     }
 }
